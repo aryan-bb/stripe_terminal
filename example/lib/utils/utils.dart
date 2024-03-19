@@ -12,6 +12,7 @@ import 'dart:async';
       if (Platform.isAndroid) ...[
         Permission.bluetoothScan,
         Permission.bluetoothConnect,
+        
       ],
     ];
 

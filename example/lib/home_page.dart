@@ -2,11 +2,14 @@
 
 import 'dart:async';
 import 'dart:developer' as text;
+import 'package:app_settings/app_settings.dart';
 import 'package:example/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart' as Dio;
 import 'package:mek_stripe_terminal/mek_stripe_terminal.dart';
+import 'package:nfc_manager/nfc_manager.dart';
 import 'dart:convert';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'utils/keyFile.dart';
 
@@ -21,6 +24,7 @@ class _StripMethodeScreenState extends State<StripMethodeScreen> {
   Terminal? _terminal;
   final dio = Dio.Dio();
   StreamController<List<Reader>>? _controller;
+  TextEditingController controller = TextEditingController();
 
   //if you've used .config.json file for storing your stripe secret key you can get it from here,
   //static const String secretKey = String.fromEnvironment('STRIPE_SECRET_KEY');
@@ -92,10 +96,41 @@ class _StripMethodeScreenState extends State<StripMethodeScreen> {
     setState(() {});
   }
 
+  // Future<bool> startNFCReading() async {
+  //   try {
+
+  //     //We first check if NFC is available on the device.
+  //     if (isAvailable) {
+  //       //If NFC is available, start an NFC session and listen for NFC tags to be discovered.
+  //       await NfcManager.instance.startSession(
+  //         onDiscovered: (NfcTag tag) async {
+  //           // Process NFC tag, When an NFC tag is discovered, print its data to the console.
+  //           showSnackBar('NFC Tag Detected: ${tag.data}', context);
+  //         },
+  //       );
+  //       return isAvailable;
+  //     } else {
+  //       setState(() {
+  //         isLoading = false;
+  //       });
+  //       showSnackBar('NFC not available.', context);
+  //       return false;
+  //     }
+  //   } catch (e) {
+  //     setState(() {
+  //       isLoading = false;
+  //     });
+  //     showSnackBar('Error reading NFC: $e', context);
+  //     return false;
+  //   }
+  // }
+
   //if testing >> true otherwise false
   Future<void> _startDiscoverReaders(Terminal terminal) async {
-    List<Reader> readers = [];
+    final List<Reader> readers = [];
     const bool isSimulated = true;
+
+    // final bool nfcAvailable = await startNFCReading();
 
     try {
       if (_controller == null) {
@@ -109,34 +144,87 @@ class _StripMethodeScreenState extends State<StripMethodeScreen> {
         );
 
         await for (List<Reader> discoveredReaders in _controller!.stream) {
-          readers.addAll(discoveredReaders);
+          final bool isAvailable = await NfcManager.instance.isAvailable();
+          if (isAvailable == false) {
+            final String appName = myPackageData['appName'];
+            await showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  alignment: Alignment.bottomCenter,
+                  title: const Icon(
+                    Icons.bluetooth_audio_rounded,
+                    color: Colors.blue,
+                  ),
+                  content: RichText(
+                      text: TextSpan(children: [
+                    const TextSpan(
+                        text: 'Allow ',
+                        style: TextStyle(
+                            color: Colors.grey, fontWeight: FontWeight.normal)),
+                    TextSpan(
+                        text: appName,
+                        style: const TextStyle(
+                            color: Colors.black, fontWeight: FontWeight.bold)),
+                    const TextSpan(
+                        text:
+                            ' to find , connect to , and determine the relative nfc devices for contactless payment',
+                        style: TextStyle(
+                            color: Colors.grey, fontWeight: FontWeight.normal))
+                  ])),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        // Add your cancel function here
+                      },
+                      child: const Text("Don't allow",
+                          style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18)),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        AppSettings.openAppSettings(type: AppSettingsType.nfc)
+                            .then((value) async {
+                          Navigator.of(context).pop();
+                          readers.addAll(discoveredReaders);
 
-          // Check if any readers were discovered
-          if (readers.isNotEmpty) {
-            // After getting all the available readers, it's time to select any one reader and connect it
-            await _connectReader(terminal, readers.first);
-            setState(() {});
+                          // Check if any readers were discovered
+                          if (readers.isNotEmpty) {
+                            // After getting all the available readers, it's time to select any one reader and connect it
+                            await _connectReader(terminal, readers.first);
+                            setState(() {});
+                          }
+
+                          showSnackBar('Reader discovery done!', context);
+                        });
+                      },
+                      child: const Text('Allow',
+                          style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18)),
+                    ),
+                  ],
+                );
+              },
+            );
           }
-
-          showSnackBar('Reader discovery done!', context);
         }
       }
     } catch (e) {
-  setState(() {
-    isLoading = false;
-  });
-  if (e is TerminalException) {
-    final String errorMessage = (e).message;
-    showSnackBar(
-        '$errorMessage',
-        context);
-  } else {
-    print('Error during reader discovery: $e');
-  }
-}
-
-
-
+      setState(() {
+        isLoading = false;
+      });
+      if (e is TerminalException) {
+        final String errorMessage = (e).message;
+        showSnackBar('$errorMessage', context);
+      } else {
+        print('Error during reader discovery: $e');
+      }
+    }
   }
 
   Reader? _reader;
@@ -169,11 +257,10 @@ class _StripMethodeScreenState extends State<StripMethodeScreen> {
     );
   }
 
-  var amount = '17.25';
   PaymentIntent? _paymentIntent;
   CancelableFuture<PaymentIntent>? _collectingPaymentMethod;
 
-  Future<void> _createPaymentIntent(Terminal terminal) async {
+  Future<void> _createPaymentIntent(Terminal terminal, String amount) async {
     try {
       final paymentIntent =
           await terminal.createPaymentIntent(PaymentIntentParameters(
@@ -244,22 +331,27 @@ class _StripMethodeScreenState extends State<StripMethodeScreen> {
 
   bool isLoading = false;
 
-  void proceedTapToPay() async {
+  void proceedTapToPay(String amount) async {
     isLoading = true;
     setState(() {});
     await _initTerminal();
     await fetchLocations(_terminal!);
     await _startDiscoverReaders(_terminal!).then((value) async {
-      await _createPaymentIntent(_terminal!);
+      await _createPaymentIntent(_terminal!, amount);
       await _collectPaymentMethod(_terminal!, _paymentIntent!);
       isLoading = false;
       setState(() {});
     });
   }
 
+  Map<String, dynamic> myPackageData = {};
   @override
   void initState() {
     super.initState();
+    unawaited(PackageInfo.fromPlatform().then((value) {
+      myPackageData = value.data;
+      setState(() {});
+    }));
   }
 
   @override
@@ -269,24 +361,45 @@ class _StripMethodeScreenState extends State<StripMethodeScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Center(
-            child: Container(
-              child: isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text('Strip Methode applied'),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextFormField(
+              enabled: isLoading == false ? true : false,
+              controller: controller,
+              decoration: InputDecoration(hintText: 'Enter amount Here'),
             ),
           ),
-          SizedBox(
+          const SizedBox(
             height: 20,
           ),
           Center(
             child: ElevatedButton(
               onPressed: () {
-                proceedTapToPay();
+                setState(() {
+                  isLoading = true;
+                });
+
+                var amount;
+
+                if (controller.text.isNotEmpty) {
+                  amount = double.tryParse(controller.text);
+                } else {
+                  amount = 1.0; // Default value if the field is empty
+                }
+
+                if (amount != null && amount > 1.0) {
+                  proceedTapToPay(amount.toString());
+                } else {
+                  showSnackBar('Please Enter a Valid Value', context);
+                  setState(() {
+                    isLoading = false;
+                  });
+                }
               },
-              child: const Text('Tap to Pay'),
+              child:
+                  isLoading ? CircularProgressIndicator() : Text('Tap to Pay'),
             ),
-          )
+          ),
         ],
       ),
     );

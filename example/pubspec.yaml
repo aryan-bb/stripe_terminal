@@ -12,6 +12,9 @@ dependencies:
     sdk: flutter
 
   permission_handler: ^10.4.3
+  nfc_manager: ^3.4.0
+  app_settings: ^5.1.1
+  package_info_plus: ^5.0.1 
   mek_stripe_terminal:
     path: ./..
 
