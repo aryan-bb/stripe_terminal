@@ -162,11 +162,42 @@ You can see the usage example in the [example folder](example/lib/main.dart)
     print("A payment intent has captured a payment method, send this payment intent to you backend to capture the payment");
     ```
 
-## Contributing
+# Adding key.properties File in Android /app Folder
 
-The code is formatted with a line/page length of 100 characters.
-Use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for your commits.
-Much code in this plugin is auto generated:
+## Introduction
+This guide explains how to add a `key.properties` file in the `/app` folder of your Android project. This file is used to store sensitive information such as API keys and passwords securely.
+
+## Adding key.properties File
+1. **Create the File**: 
+    - Navigate to the `/app` folder of your Android project.
+    - Create a new file named `key.properties`.
+
+2. **Add Sensitive Information**: 
+    - Open the `key.properties` file.
+    - Add the following lines with your sensitive information:
+    ```properties
+    PASSWORD=123456
+    storeFile=<keystore-file-location>
+    ```
+
+3. **Add to .gitignore**: 
+    - Open or create a `.gitignore` file in the root directory of your project.
+    - Add `key.properties` to the `.gitignore` file to prevent it from being committed to version control.
+
+## Accessing Sensitive Information
+To access the sensitive information stored in `key.properties` within your Android project, follow these steps:
+
+
+## Changing API Key
+To change the API key stored in `Home.dart`, follow these steps:
+
+1. Open the `homePage.dart` file.
+2. Replace the value of `API_KEY` with your new API key.
+3. Save the file.
+
+## Proceeding with the Updated API Key
+After changing the API key in `key.properties`, ensure that you rebuild your project to apply the changes. Your Android app will now use the updated API key for communication with the respective service.
+
 - [one_for_all](https://pub.dev/packages/one_for_all) is used to generate the code for communication between platforms.
   Run this [script](tool/generate_api.dart)
 - [index_generator](https://pub.dev/packages/index_generator) is used to generate library exports
