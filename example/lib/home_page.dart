@@ -185,8 +185,8 @@ class _StripMethodeScreenState extends State<StripMethodeScreen> {
                               fontSize: 18)),
                     ),
                     TextButton(
-                      onPressed: () {
-                        AppSettings.openAppSettings(type: AppSettingsType.nfc)
+                      onPressed: ()async {
+                      await AppSettings.openAppSettings(type: AppSettingsType.nfc)
                             .then((value) async {
                           Navigator.of(context).pop();
                           readers.addAll(discoveredReaders);
