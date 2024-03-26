@@ -68,9 +68,14 @@ android {
        }
    }
    buildTypes {
-       release {
-           signingConfig signingConfigs.release
-       }
+        release {
+        minifyEnabled true
+        shrinkResources true
+        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        // Add the following lines to keep the specified classes
+        proguardFiles 'proguard-rules.pro'
+        signingConfig signingConfigs.release   //   <--- HERE YOU ARE USING DEBUG KEY
+    }
    }
 
 }

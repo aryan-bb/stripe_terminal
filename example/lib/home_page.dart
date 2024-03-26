@@ -71,7 +71,7 @@ class _StripMethodeScreenState extends State<StripMethodeScreen> {
     await requestPermissions();
     final connectionToken = await getConnectionToken();
     final terminal = await Terminal.getInstance(
-      shouldPrintLogs: false,
+      shouldPrintLogs: true,
       fetchToken: () async {
         return connectionToken;
       },
@@ -144,73 +144,73 @@ class _StripMethodeScreenState extends State<StripMethodeScreen> {
         );
 
         await for (List<Reader> discoveredReaders in _controller!.stream) {
-          final bool isAvailable = await NfcManager.instance.isAvailable();
-          if (isAvailable == false) {
-            final String appName = myPackageData['appName'];
-            await showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  alignment: Alignment.bottomCenter,
-                  title: const Icon(
-                    Icons.bluetooth_audio_rounded,
-                    color: Colors.blue,
-                  ),
-                  content: RichText(
-                      text: TextSpan(children: [
-                    const TextSpan(
-                        text: 'Allow ',
-                        style: TextStyle(
-                            color: Colors.grey, fontWeight: FontWeight.normal)),
-                    TextSpan(
-                        text: appName,
-                        style: const TextStyle(
-                            color: Colors.black, fontWeight: FontWeight.bold)),
-                    const TextSpan(
-                        text:
-                            ' to find , connect to , and determine the relative nfc devices for contactless payment',
-                        style: TextStyle(
-                            color: Colors.grey, fontWeight: FontWeight.normal))
-                  ])),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        // Add your cancel function here
-                      },
-                      child: const Text("Don't allow",
-                          style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18)),
-                    ),
-                    TextButton(
-                      onPressed: ()async {
-                      await AppSettings.openAppSettings(type: AppSettingsType.nfc)
-                            .then((value) async {
-                          Navigator.of(context).pop();
-                          readers.addAll(discoveredReaders);
+          // final bool isAvailable = await NfcManager.instance.isAvailable();
+          // if (isAvailable == false) {
+          //   final String appName = myPackageData['appName'];
+          //   // await showDialog(
+          //   //   context: context,
+          //   //   builder: (BuildContext context) {
+          //   //     return AlertDialog(
+          //   //       alignment: Alignment.bottomCenter,
+          //   //       title: const Icon(
+          //   //         Icons.bluetooth_audio_rounded,
+          //   //         color: Colors.blue,
+          //   //       ),
+          //   //       content: RichText(
+          //   //           text: TextSpan(children: [
+          //   //         const TextSpan(
+          //   //             text: 'Allow ',
+          //   //             style: TextStyle(
+          //   //                 color: Colors.grey, fontWeight: FontWeight.normal)),
+          //   //         TextSpan(
+          //   //             text: appName,
+          //   //             style: const TextStyle(
+          //   //                 color: Colors.black, fontWeight: FontWeight.bold)),
+          //   //         const TextSpan(
+          //   //             text:
+          //   //                 ' to find , connect to , and determine the relative nfc devices for contactless payment',
+          //   //             style: TextStyle(
+          //   //                 color: Colors.grey, fontWeight: FontWeight.normal))
+          //   //       ])),
+          //   //       actions: [
+          //   //         TextButton(
+          //   //           onPressed: () {
+          //   //             Navigator.of(context).pop();
+          //   //             // Add your cancel function here
+          //   //           },
+          //   //           child: const Text("Don't allow",
+          //   //               style: TextStyle(
+          //   //                   color: Colors.black,
+          //   //                   fontWeight: FontWeight.bold,
+          //   //                   fontSize: 18)),
+          //   //         ),
+          //   //         TextButton(
+          //   //           onPressed: ()async {
+          //   //           await AppSettings.openAppSettings(type: AppSettingsType.nfc)
+          //   //                 .then((value) async {
+          //   //               Navigator.of(context).pop();
 
-                          // Check if any readers were discovered
-                          if (readers.isNotEmpty) {
-                            // After getting all the available readers, it's time to select any one reader and connect it
-                            await _connectReader(terminal, readers.first);
-                            setState(() {});
-                          }
+          //   //               showSnackBar('Reader discovery done!', context);
+          //   //             });
+          //   //           },
+          //   //           child: const Text('Allow',
+          //   //               style: TextStyle(
+          //   //                   color: Colors.black,
+          //   //                   fontWeight: FontWeight.bold,
+          //   //                   fontSize: 18)),
+          //   //         ),
+          //   //       ],
+          //   //     );
+          //   //   },
+          //   // );
+          // }
+          readers.addAll(discoveredReaders);
 
-                          showSnackBar('Reader discovery done!', context);
-                        });
-                      },
-                      child: const Text('Allow',
-                          style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18)),
-                    ),
-                  ],
-                );
-              },
-            );
+          // Check if any readers were discovered
+          if (readers.isNotEmpty) {
+            // After getting all the available readers, it's time to select any one reader and connect it
+            await _connectReader(terminal, readers.first);
+            setState(() {});
           }
         }
       }
